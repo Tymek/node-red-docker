@@ -1,13 +1,12 @@
-ARG ARCH=amd64
 ARG NODE_VERSION=20
 ARG OS=bullseye-slim
 
 #### Stage BASE ########################################################################################################
-FROM ${ARCH}/node:${NODE_VERSION}-${OS} AS base
+FROM node:${NODE_VERSION}-${OS} AS base
 
 # Copy scripts
-COPY scripts/*.sh /tmp/
-COPY healthcheck.js /
+COPY .docker/scripts/*.sh /tmp/
+COPY .docker/healthcheck.js /
 
 # Install tools, create Node-RED app and data dir, add user and set rights
 RUN set -ex && \
@@ -35,14 +34,14 @@ RUN set -ex && \
 WORKDIR /usr/src/node-red
 
 # Setup SSH known_hosts file
-COPY known_hosts.sh .
+COPY .docker/known_hosts.sh .
 RUN ./known_hosts.sh /etc/ssh/ssh_known_hosts && rm /usr/src/node-red/known_hosts.sh
 RUN echo "PubkeyAcceptedKeyTypes +ssh-rsa" >> /etc/ssh/ssh_config
 
 # package.json contains Node-RED NPM module and node dependencies
 COPY package.json .
 COPY flows.json /data
-COPY scripts/entrypoint.sh .
+COPY .docker/scripts/entrypoint.sh .
 
 #### Stage BUILD #######################################################################################################
 FROM base AS build
@@ -60,7 +59,7 @@ ARG BUILD_VERSION
 ARG BUILD_REF
 ARG NODE_RED_VERSION
 ARG ARCH
-ARG TAG_SUFFIX=default
+ARG TAG_SUFFIX
 
 LABEL org.label-schema.build-date=${BUILD_DATE} \
     org.label-schema.docker.dockerfile=".docker/Dockerfile.debian" \
